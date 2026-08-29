@@ -1,3 +1,5 @@
+
+# [Play the Game: Eldoria](jogo.html)
 # Eldoria
 Jogo Eldoria: Criado inteiramente por Google Gemini 3.7 Flash
 Prompt Inicial: "gere para mim um jogo text adventure em HTML5. Gere um código único contendo a estrutura completa."

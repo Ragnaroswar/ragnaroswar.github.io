@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eldoria: O Enigma dos Ancestrais</title>
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --panel-bg: #151921;
+            --border-color: #2b3240;
+            --text-main: #d1d7e0;
+            --title-color: #e5a93c;
+            --accent: #58a6ff;
+            --danger: #f85149;
+            --success: #3fb950;
+            --puzzle: #bc8cff;
+            --gold: #f1b63c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: #0d1117;
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            color: var(--title-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            font-size: 0.95rem;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hp-bar-container {
+            width: 90px;
+            height: 10px;
+            background-color: #21262d;
+            border-radius: 5px;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+
+        .hp-bar {
+            height: 100%;
+            background-color: var(--success);
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 240px;
+            min-height: 420px;
+        }
+
+        @media (max-width: 720px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .narrative-box {
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 420px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            line-height: 1.6;
+            font-size: 1rem;
+        }
+
+        .narrative-box p {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        .event-text { color: var(--accent); font-style: italic; }
+        .puzzle-text { color: var(--puzzle); font-weight: 500; }
+        .danger-text { color: var(--danger); font-weight: bold; }
+        .success-text { color: var(--success); font-weight: bold; }
+
+        .sidebar {
+            background-color: #0e1219;
+            border-left: 1px solid var(--border-color);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        @media (max-width: 720px) {
+            .sidebar {
+                border-left: none;
+                border-top: 1px solid var(--border-color);
+            }
+        }
+
+        .sidebar h2 {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8b949e;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+        }
+
+        .inventory-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .inventory-item {
+            font-size: 0.85rem;
+            background: #171d26;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .actions-box {
+            padding: 18px 24px;
+            background-color: #0d1117;
+            border-top: 1px solid var(--border-color);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 10px;
+        }
+
+        button.choice-btn {
+            background-color: #1b212b;
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.92rem;
+            text-align: left;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        button.choice-btn:hover:not(:disabled) {
+            background-color: #27303f;
+            border-color: var(--accent);
+            color: #ffffff;
+            transform: translateY(-2px);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <header>
+            <h1>Eldoria</h1>
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <span>❤️ Vida:</span>
+                    <span id="hp-value">100/100</span>
+                    <div class="hp-bar-container">
+                        <div class="hp-bar" id="hp-bar" style="width: 100%;"></div>
+                    </div>
+                </div>
+                <div class="stat-item" style="color: var(--gold);">
+                    <span>🪙 Ouro:</span>
+                    <span id="gold-value">0</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <div class="narrative-box" id="narrative-box"></div>
+            
+            <aside class="sidebar">
+                <div>
+                    <h2>🎒 Inventário</h2>
+                    <ul class="inventory-list" id="inventory-list"></ul>
+                </div>
+                <div>
+                    <h2>📜 Caderno de Pistas</h2>
+                    <ul class="inventory-list" id="clues-list"></ul>
+                </div>
+            </aside>
+        </div>
+
+        <div class="actions-box" id="actions-box"></div>
+    </div>
+
+    <script>
+        // ESTADO GLOBAL DO JOGADOR
+        const player = {
+            hp: 100,
+            maxHp: 100,
+            gold: 0,
+            inventory: [],
+            clues: [],
+            flags: {
+                hasTorch: false,
+                skeletonDefeated: false,
+                secretPassageUnlocked: false,
+                alchemicalAcidCrafted: false,
+                herbCollected: false,
+                vinegarCollected: false,
+                riddleSolved: false,
+                lightBeamPuzzleSolved: false,
+                platePuzzleProgress: 0,
+                platePuzzleFailed: false,
+                gateLockMelted: false,
+                libraryRead: false,
+                mirrorAngles: { north: 0, east: 0 } // 0, 45, 90
+            }
+        };
+
+        // ESTRUTURA DE NÓS (SALAS, PUZZLES E ESCOLHAS)
+        const storyNodes = {
+            start: {
+                text: "Você se encontra na entrada decadente do Templo de Eldoria. Uma névoa fria rasteja pelas lajes quebradas. À frente, um imenso portão de ferro trancado impede o avanço direto. À esquerda há uma estátua com feições arcanas e à direita um fosso coberto por folhagens densas.",
+                choices: [
+                    { text: "Examinar a Estátua Arcana", target: "estatua" },
+                    { text: "Investigar o Fosso com Folhagens", target: "fosso" },
+                    { text: "Tentar forçar o Portão de Ferro", target: "portao" },
+                    { 
+                        text: "Usar Ácido Alquímico nas correntes do Portão", 
+                        target: "portao_derretido",
+                        condition: () => player.flags.alchemicalAcidCrafted && !player.flags.gateLockMelted
+                    },
+                    { 
+                        text: "Entrar pelo Portão Desbloqueado", 
+                        target: "salao_principal",
+                        condition: () => player.flags.gateLockMelted || player.flags.secretPassageUnlocked
+                    }
+                ]
+            },
+
+            // --- PUZZLE 1: ENIGMA DA ESTÁTUA ---
+            estatua: {
+                text: "A estátua de granito possui olhos de safira opaca. Ao se aproximar, uma voz ecoa em sua mente: 'Não tenho pulmões, mas preciso de ar. Não sou vivo, mas cresço. Não tenho boca, mas a água me mata. O que sou eu?'",
+                choices: [
+                    { 
+                        text: "Responder: 'O Fogo'", 
+                        target: "estatua_sucesso",
+                        condition: () => !player.flags.riddleSolved 
+                    },
+                    { 
+                        text: "Responder: 'O Vento'", 
+                        target: "estatua_erro",
+                        condition: () => !player.flags.riddleSolved 
+                    },
+                    { 
+                        text: "Responder: 'A Sombra'", 
+                        target: "estatua_erro",
+                        condition: () => !player.flags.riddleSolved 
+                    },
+                    { 
+                        text: "Pegar o Espelho de Latão das mãos da estátua", 
+                        target: "pegar_espelho",
+                        condition: () => player.flags.riddleSolved && !hasItem("Espelho de Latão") 
+                    },
+                    { text: "Voltar para a entrada", target: "start" }
+                ]
+            },
+
+            estatua_sucesso: {
+                text: "Os olhos de safira da estátua brilham intensamente. Um clique reverbera pela base de pedra e as mãos do monumento se abrem revelando um Espelho de Latão polido e uma Tocha.",
+                onEnter: () => {
+                    player.flags.riddleSolved = true;
+                    player.flags.hasTorch = true;
+                    addItem("Tocha Acesa");
+                    addClue("Dica do Sol: 'A luz deve ricochetear 90° ao Norte e 45° a Leste.'");
+                    return "✨ Enigma resolvido! Você recebeu uma Tocha Acesa e uma pista no seu caderno!";
+                },
+                choices: [
+                    { text: "Pegar o Espelho de Latão", target: "pegar_espelho" },
+                    { text: "Voltar à entrada", target: "start" }
+                ]
+            },
+
+            estatua_erro: {
+                text: "A estátua emite um ruído seco de desaprovação e expele um gás acre diretamente no seu rosto!",
+                onEnter: () => {
+                    takeDamage(15);
+                    return "❌ Resposta incorreta! O gás tóxico causou 15 de dano.";
+                },
+                choices: [
+                    { text: "Tentar se recuperar", target: "estatua" }
+                ]
+            },
+
+            pegar_espelho: {
+                text: "Você retira com cuidado o artefato de metal polido.",
+                onEnter: () => {
+                    addItem("Espelho de Latão");
+                    return "Você adquiriu o [Espelho de Latão]!";
+                },
+                choices: [
+                    { text: "Voltar para a entrada", target: "start" }
+                ]
+            },
+
+            // --- FOSSO E PASSAGEM SECRETA ---
+            fosso: {
+                text: "Você desce cuidadosamente pelo declive de pedras. Entre a vegetação rasteira, você avista uma rara Erva de Fogo avermelhada e uma fenda estreita na muralha.",
+                choices: [
+                    { 
+                        text: "Colher a Erva de Fogo", 
+                        target: "colher_erva",
+                        condition: () => !player.flags.herbCollected 
+                    },
+                    { 
+                        text: "Entrar pela fenda estreita usando a Tocha", 
+                        target: "passagem_estreita",
+                        condition: () => player.flags.hasTorch
+                    },
+                    { 
+                        text: "Tentar entrar na fenda às cegas no escuro", 
+                        target: "fenda_escuro",
+                        condition: () => !player.flags.hasTorch
+                    },
+                    { text: "Subir de volta", target: "start" }
+                ]
+            },
+
+            colher_erva: {
+                text: "Você extrai cuidadosamente a planta que irradia um calor sutil.",
+                onEnter: () => {
+                    player.flags.herbCollected = true;
+                    addItem("Erva de Fogo");
+                    return "Você obteve: [Erva de Fogo]!";
+                },
+                choices: [
+                    { text: "Voltar a investigar o fosso", target: "fosso" }
+                ]
+            },
+
+            fenda_escuro: {
+                text: "Você tenta engatinhar pela escuridão total. Sem visão, sua mão cai diretamente sobre um ninho de escorpiões da cripta!",
+                onEnter: () => {
+                    takeDamage(25);
+                    return "⚠️ Você foi picado e recuou às pressas! -25 HP.";
+                },
+                choices: [
+                    { text: "Recuar para o fosso", target: "fosso" }
+                ]
+            },
+
+            passagem_estreita: {
+                text: "Com a tocha iluminando o caminho, você afasta as criaturas e rasteja até sair nos fundos do Grande Salão do Templo!",
+                onEnter: () => {
+                    player.flags.secretPassageUnlocked = true;
+                    return "🔓 Você descobriu um atalho para o interior do templo!";
+                },
+                choices: [
+                    { text: "Avançar para o Grande Salão", target: "salao_principal" }
+                ]
+            },
+
+            portao: {
+                text: "Grossas correntes de ferro negro mantêm as portas trancadas. Uma fechadura corroída resiste a qualquer tentativa com gazuas comuns.",
+                choices: [
+                    { 
+                        text: "Bater com o ombro nas correntes", 
+                        target: "portao_pancada"
+                    },
+                    { text: "Voltar para o pátio", target: "start" }
+                ]
+            },
+
+            portao_pancada: {
+                text: "O ferro nem se mexe. Você só consegue um ombro dolorido e barulho.",
+                onEnter: () => {
+                    takeDamage(10);
+                    return "Você perdeu 10 HP.";
+                },
+                choices: [
+                    { text: "Recuar", target: "start" }
+                ]
+            },
+
+            portao_derretido: {
+                text: "Você despeja o Ácido Alquímico sobre as correntes. O metal ferve em uma fumaça verde e se desfaz em cinzas!",
+                onEnter: () => {
+                    player.flags.gateLockMelted = true;
+                    return "✨ O portão principal foi completamente destravado!";
+                },
+                choices: [
+                    { text: "Adentrar o Grande Salão", target: "salao_principal" }
+                ]
+            },
+
+            // --- NÚCLEO: GRANDE SALÃO ---
+            salao_principal: {
+                text: "Um salão majestoso com tetos abobadados se estende diante de você. Existem 3 passagens marcadas por arcos esculpidos: a Antiga Biblioteca, a Câmara dos Espelhos Luminares e o Perigoso Corredor dos Glifos.",
+                choices: [
+                    { text: "Ir para a Biblioteca dos Eruditos", target: "biblioteca" },
+                    { text: "Ir para a Câmara dos Espelhos", target: "sala_espelhos" },
+                    { text: "Cruzar o Corredor dos Glifos", target: "corredor_glifos_inicio" },
+                    { 
+                        text: "Avançar para o Santuário Sagrado (Porta Selada)", 
+                        target: "porta_santuario" 
+                    },
+                    { text: "Voltar para a entrada do templo", target: "start" }
+                ]
+            },
+
+            // --- SALA 2: BIBLIOTECA & ALQUIMIA ---
+            biblioteca: {
+                text: "Pilhas de pergaminhos antigos e estantes de carvalho empoeiradas cercam uma bancada de alquimia intacta. Em uma mesa repousa um Frasco de Solvente Ácido e um tomo aberto.",
+                choices: [
+                    { 
+                        text: "Ler o Tomo dos Guardiões", 
+                        target: "ler_livro",
+                        condition: () => !player.flags.libraryRead
+                    },
+                    { 
+                        text: "Coletar o Frasco de Solvente Ácido", 
+                        target: "pegar_solvente",
+                        condition: () => !player.flags.vinegarCollected
+                    },
+                    { 
+                        text: "Combinar Solvente + Erva de Fogo na Bancada", 
+                        target: "sintese_alquimica",
+                        condition: () => player.flags.herbCollected && player.flags.vinegarCollected && !player.flags.alchemicalAcidCrafted
+                    },
+                    { text: "Retornar ao Grande Salão", target: "salao_principal" }
+                ]
+            },
+
+            ler_livro: {
+                text: "O texto diz: 'Para cruzar o corredor sem despertar a ira dos dardos: pise primeiro na [Chama], avance para a [Lua] e termine sobre a [Serpente]. Jamais pise no Olho.'",
+                onEnter: () => {
+                    player.flags.libraryRead = true;
+                    addClue("Caminho Seguro: Chama ➔ Lua ➔ Serpente (Evite o Olho)");
+                    return "📖 Você registrou a rota segura no seu caderno de pistas!";
+                },
+                choices: [
+                    { text: "Continuar na biblioteca", target: "biblioteca" }
+                ]
+            },
+
+            pegar_solvente: {
+                text: "Você guarda o frasco com líquido reagente.",
+                onEnter: () => {
+                    player.flags.vinegarCollected = true;
+                    addItem("Frasco de Solvente");
+                    return "Você obteve: [Frasco de Solvente]!";
+                },
+                choices: [
+                    { text: "Continuar na biblioteca", target: "biblioteca" }
+                ]
+            },
+
+            sintese_alquimica: {
+                text: "Você macera a Erva de Fogo dentro do solvente na bancada. A mistura entra em ebulição imediata, tornando-se um Ácido Alquímico supercorrosivo!",
+                onEnter: () => {
+                    player.flags.alchemicalAcidCrafted = true;
+                    addItem("Ácido Alquímico");
+                    return "🧪 Sucesso alquímico! Você criou [Ácido Alquímico]!";
+                },
+                choices: [
+                    { text: "Voltar para o Salão Principal", target: "salao_principal" }
+                ]
+            },
+
+            // --- PUZZLE 2: CORREDOR DAS PLACAS DE PRESSÃO ---
+            corredor_glifos_inicio: {
+                text: "O corredor tem o piso composto por ladrilhos esculpidos com símbolos em relevo. Mecanismos nas paredes parecem prontos para disparar armadilhas se você errar o passo. Você está na Primeira Fileira de placas.",
+                choices: [
+                    { text: "Pisar na placa da [Chama]", target: "placa_1_certo" },
+                    { text: "Pisar na placa do [Olho]", target: "placa_armadilha" },
+                    { text: "Pisar na placa da [Árvore]", target: "placa_armadilha" },
+                    { text: "Recuar para o Salão Principal", target: "salao_principal" }
+                ]
+            },
+
+            placa_1_certo: {
+                text: "A placa cede suavemente com um som mecânico brando. Você avança para a Segunda Fileira.",
+                choices: [
+                    { text: "Pisar na placa da [Lua]", target: "placa_2_certo" },
+                    { text: "Pisar na placa do [Sol]", target: "placa_armadilha" },
+                    { text: "Pisar na placa do [Olho]", target: "placa_armadilha" }
+                ]
+            },
+
+            placa_2_certo: {
+                text: "Mais uma engrenagem gira nas paredes sem disparar dardos. Você alcança a Terceira e última Fileira.",
+                choices: [
+                    { text: "Pisar na placa da [Serpente]", target: "placa_3_sucesso" },
+                    { text: "Pisar na placa da [Chama]", target: "placa_armadilha" },
+                    { text: "Pisar na placa do [Trovão]", target: "placa_armadilha" }
+                ]
+            },
+
+            placa_armadilha: {
+                text: "CLIQUE! A placa afunda bruscamente. Dezenas de dardos envenenados disparam dos orifícios das paredes!",
+                onEnter: () => {
+                    takeDamage(35);
+                    return "⚠️ ARMADILHA ATIVADA! Você foi cravado por dardos e sofreu 35 de dano!";
+                },
+                choices: [
+                    { text: "Arrastar-se de volta ao início do corredor", target: "corredor_glifos_inicio" },
+                    { text: "Fugir para o Salão Principal", target: "salao_principal" }
+                ]
+            },
+
+            placa_3_sucesso: {
+                text: "Você pisa na placa da Serpente e todas as armadilhas do corredor são desarmadas permanentemente! No final do corredor repousa o pedestal com o Cristal Prismático.",
+                onEnter: () => {
+                    if (!hasItem("Cristal Prismático")) {
+                        addItem("Cristal Prismático");
+                        player.gold += 30;
+                        return "🎉 Corredor superado! Você pegou o [Cristal Prismático] e 30 moedas de ouro!";
+                    }
+                },
+                choices: [
+                    { text: "Retornar com segurança ao Salão", target: "salao_principal" }
+                ]
+            },
+
+            // --- PUZZLE 3: CÂMARA DOS ESPELHOS ---
+            sala_espelhos: {
+                text: "Nesta sala circular, um feixe de luz mágica desce do teto sobre um suporte central. Há dois pedestais móveis (Norte e Leste) e um receptáculo rúnico que destrava a gema da porta sagrada.",
+                choices: [
+                    { 
+                        text: "Inserir Cristal Prismático no Suporte Central", 
+                        target: "inserir_cristal",
+                        condition: () => hasItem("Cristal Prismático") && !player.flags.crystalInserted
+                    },
+                    { 
+                        text: "Posicionar o Espelho de Latão no Pedestal Norte", 
+                        target: "ajustar_norte",
+                        condition: () => hasItem("Espelho de Latão")
+                    },
+                    { 
+                        text: "Ajustar ângulo do Pedestal Leste", 
+                        target: "ajustar_leste" 
+                    },
+                    { 
+                        text: "Ativar mecanismo de focagem de luz", 
+                        target: "verificar_luz" 
+                    },
+                    { text: "Retornar ao Grande Salão", target: "salao_principal" }
+                ]
+            },
+
+            inserir_cristal: {
+                text: "O cristal divide o feixe de luz em raios concentrados em várias direções.",
+                onEnter: () => {
+                    player.flags.crystalInserted = true;
+                    return "Cristal Prismático acoplado ao feixe central.";
+                },
+                choices: [
+                    { text: "Continuar os ajustes", target: "sala_espelhos" }
+                ]
+            },
+
+            ajustar_norte: {
+                text: "Você gira o pedestal Norte. Qual ângulo você deseja definir?",
+                choices: [
+                    { text: "Definir para 0° (Reto)", target: "sala_espelhos", onEnter: () => { player.flags.mirrorAngles.north = 0; } },
+                    { text: "Definir para 45°", target: "sala_espelhos", onEnter: () => { player.flags.mirrorAngles.north = 45; } },
+                    { text: "Definir para 90° (Ângulo Reto)", target: "sala_espelhos", onEnter: () => { player.flags.mirrorAngles.north = 90; } }
+                ]
+            },
+
+            ajustar_leste: {
+                text: "Você gira o pedestal Leste. Qual ângulo você deseja definir?",
+                choices: [
+                    { text: "Definir para 0° (Reto)", target: "sala_espelhos", onEnter: () => { player.flags.mirrorAngles.east = 0; } },
+                    { text: "Definir para 45°", target: "sala_espelhos", onEnter: () => { player.flags.mirrorAngles.east = 45; } },
+                    { text: "Definir para 90° (Ângulo Reto)", target: "sala_espelhos", onEnter: () => { player.flags.mirrorAngles.east = 90; } }
+                ]
+            },
+
+            verificar_luz: {
+                text: "Você puxa a alavanca de ignição solar...",
+                onEnter: () => {
+                    if (!player.flags.crystalInserted) {
+                        return "❌ Nada acontece. Falta um cristal no centro para dividir o feixe luminoso.";
+                    }
+                    if (player.flags.mirrorAngles.north === 90 && player.flags.mirrorAngles.east === 45) {
+                        player.flags.lightBeamPuzzleSolved = true;
+                        addItem("Selo Solar do Santuário");
+                        return "🌟 MAGNÍFICO! O feixe de luz reflete com precisão nos espelhos e atinge o receptáculo rúnico! O [Selo Solar do Santuário] se materializa diante de você!";
+                    } else {
+                        return "⚡ O feixe rebate nas paredes de maneira torta e se dissipa. Revise os ângulos dos espelhos e as dicas do seu caderno!";
+                    }
+                },
+                choices: [
+                    { text: "Continuar", target: "sala_espelhos" }
+                ]
+            },
+
+            // --- PORTA DO SANTUÁRIO E FINAIS ---
+            porta_santuario: {
+                text: "A colossal porta dourada do Santuário de Eldoria exige o Selo Solar para se abrir.",
+                choices: [
+                    { 
+                        text: "Inserir o Selo Solar do Santuário", 
+                        target: "santuario_interior",
+                        condition: () => hasItem("Selo Solar do Santuário")
+                    },
+                    { text: "Voltar para explorar mais o templo", target: "salao_principal" }
+                ]
+            },
+
+            santuario_interior: {
+                text: "A porta desliza suavemente em meio a uma névoa dourada. No coração do santuário flutua o 'Coração de Eldoria', uma relíquia viva capaz de curar reinos inteiros ou conceder riqueza inimaginável se for vendida a imperadores.",
+                choices: [
+                    { text: "Consagrar a relíquia e restaurar a paz no mundo (Final Heroico)", target: "final_bom" },
+                    { text: "Roubar a relíquia para vender pelo maior preço (Final Ganancioso)", target: "final_neutro" },
+                    { text: "Absorver o poder arcano da relíquia para si (Final Sombrio)", target: "final_poder" }
+                ]
+            },
+
+            final_bom: {
+                text: "Ao tocar a relíquia com honra, uma onda de energia cura todas as suas feridas e purifica o templo. Seu nome será gravado para sempre nos livros como o Campeão da Luz!",
+                onEnter: () => {
+                    heal(100);
+                    return "🏆 FINAL VITORIOSO (HERÓI DE ELDORIA) - Você concluiu todos os enigmas com perfeição!";
+                },
+                choices: [{ text: "Jogar Novamente", target: "restart" }]
+            },
+
+            final_neutro: {
+                text: "Você escapa do templo abarrotado de ouro e tesouros lendários. Você vive o resto dos seus dias em riqueza absoluta, mas vigiando as costas para o resto da vida.",
+                onEnter: () => {
+                    player.gold += 1000;
+                    return "💰 FINAL DO MERCENÁRIO - Você sobreviveu e ficou podre de rico!";
+                },
+                choices: [{ text: "Jogar Novamente", target: "restart" }]
+            },
+
+            final_poder: {
+                text: "O poder bruto de Eldoria invade suas veias. Seus olhos emanam fogo arcano e você se torna o novo Senhor Guardião deste templo esquecido por séculos.",
+                onEnter: () => {
+                    return "🔮 FINAL DO ARQUIMAGO SOMBRIO - Você conquistou o poder absoluto!";
+                },
+                choices: [{ text: "Jogar Novamente", target: "restart" }]
+            },
+
+            game_over: {
+                text: "☠️ Seus pontos de vida chegaram a zero. Os perigos e armadilhas ancestrais do templo ceifaram sua jornada...",
+                choices: [{ text: "Recomeçar do Início", target: "restart" }]
+            }
+        };
+
+        // MOTOR DO SISTEMA
+        function updateUI() {
+            const hpVal = Math.max(0, player.hp);
+            document.getElementById('hp-value').innerText = `${hpVal}/${player.maxHp}`;
+            const hpPercent = (hpVal / player.maxHp) * 100;
+            const hpBar = document.getElementById('hp-bar');
+            hpBar.style.width = `${hpPercent}%`;
+            
+            if (hpPercent > 50) hpBar.style.backgroundColor = 'var(--success)';
+            else if (hpPercent > 20) hpBar.style.backgroundColor = 'var(--gold)';
+            else hpBar.style.backgroundColor = 'var(--danger)';
+
+            document.getElementById('gold-value').innerText = player.gold;
+
+            // Inventário
+            const invList = document.getElementById('inventory-list');
+            invList.innerHTML = '';
+            if (player.inventory.length === 0) {
+                invList.innerHTML = '<li style="font-size:0.8rem; color:#6e7681;">Vazio</li>';
+            } else {
+                player.inventory.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'inventory-item';
+                    li.innerHTML = `📦 <span>${item}</span>`;
+                    invList.appendChild(li);
+                });
+            }
+
+            // Caderno de Pistas
+            const cluesList = document.getElementById('clues-list');
+            cluesList.innerHTML = '';
+            if (player.clues.length === 0) {
+                cluesList.innerHTML = '<li style="font-size:0.8rem; color:#6e7681;">Nenhuma pista ainda</li>';
+            } else {
+                player.clues.forEach(clue => {
+                    const li = document.createElement('li');
+                    li.className = 'inventory-item';
+                    li.style.borderColor = 'var(--puzzle)';
+                    li.innerHTML = `💡 <span>${clue}</span>`;
+                    cluesList.appendChild(li);
+                });
+            }
+        }
+
+        function addItem(item) {
+            if (!player.inventory.includes(item)) {
+                player.inventory.push(item);
+                updateUI();
+            }
+        }
+
+        function hasItem(item) {
+            return player.inventory.includes(item);
+        }
+
+        function addClue(clue) {
+            if (!player.clues.includes(clue)) {
+                player.clues.push(clue);
+                updateUI();
+            }
+        }
+
+        function takeDamage(dmg) {
+            player.hp = Math.max(0, player.hp - dmg);
+            updateUI();
+            if (player.hp <= 0) {
+                goToNode('game_over');
+            }
+        }
+
+        function heal(amount) {
+            player.hp = Math.min(player.maxHp, player.hp + amount);
+            updateUI();
+        }
+
+        function appendNarrative(text, className = "") {
+            const box = document.getElementById('narrative-box');
+            const p = document.createElement('p');
+            if (className) p.className = className;
+            p.innerText = text;
+            box.appendChild(p);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function goToNode(nodeKey) {
+            if (nodeKey === 'restart') {
+                restartGame();
+                return;
+            }
+
+            const node = storyNodes[nodeKey];
+            if (!node) return;
+
+            const box = document.getElementById('narrative-box');
+            box.innerHTML = '';
+
+            appendNarrative(node.text);
+
+            if (node.onEnter) {
+                const extraMsg = node.onEnter();
+                if (extraMsg) {
+                    appendNarrative(extraMsg, extraMsg.includes("❌") || extraMsg.includes("⚠️") ? "danger-text" : "success-text");
+                }
+            }
+
+            if (player.hp <= 0 && nodeKey !== 'game_over') {
+                goToNode('game_over');
+                return;
+            }
+
+            const actionsBox = document.getElementById('actions-box');
+            actionsBox.innerHTML = '';
+
+            node.choices.forEach(choice => {
+                const isAvailable = choice.condition ? choice.condition() : true;
+
+                if (isAvailable) {
+                    const btn = document.createElement('button');
+                    btn.className = 'choice-btn';
+                    btn.innerText = `➤ ${choice.text}`;
+                    btn.onclick = () => {
+                        if (choice.onEnter) choice.onEnter();
+                        goToNode(choice.target);
+                    };
+                    actionsBox.appendChild(btn);
+                }
+            });
+
+            updateUI();
+        }
+
+        function restartGame() {
+            player.hp = 100;
+            player.gold = 0;
+            player.inventory = [];
+            player.clues = [];
+            player.flags = {
+                hasTorch: false,
+                skeletonDefeated: false,
+                secretPassageUnlocked: false,
+                alchemicalAcidCrafted: false,
+                herbCollected: false,
+                vinegarCollected: false,
+                riddleSolved: false,
+                lightBeamPuzzleSolved: false,
+                platePuzzleProgress: 0,
+                platePuzzleFailed: false,
+                gateLockMelted: false,
+                libraryRead: false,
+                mirrorAngles: { north: 0, east: 0 }
+            };
+            goToNode('start');
+        }
+
+        window.onload = () => {
+            goToNode('start');
+        };
+    </script>
+</body>
+</html>
